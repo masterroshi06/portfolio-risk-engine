@@ -4,6 +4,14 @@ Interactive Streamlit dashboard implementing **1-day Value at Risk (VaR)**, **Ex
 
 ---
 
+## 📸 App Preview
+
+### 1. Portfolio Setup
+![Portfolio Setup](assets/setup-tab.png)
+
+### 2. Tail-Risk Analytics
+![Risk Analytics](assets/analytics-tab.png)
+
 ## Features
 
 - **Multi-asset ingestion & search:** Pulls adjusted daily closes and live pricing from Yahoo Finance (`yfinance`) with smart ticker resolution and automatic `.NS` suffixing for Indian stocks.
