@@ -1,94 +1,106 @@
 # Multi-Asset Portfolio Risk & Market Stress-Testing Engine
 
-Interactive Streamlit app for **1-day Value at Risk (VaR)**, **Expected Shortfall (CVaR)**, and **historical crisis replay** on a multi-asset book (equities and ETFs). Built for portfolio managers and risk analysts; deploys on [Streamlit Community Cloud](https://streamlit.io/cloud) from this repository root.
+Interactive Streamlit dashboard implementing **1-day Value at Risk (VaR)**, **Expected Shortfall (CVaR)**, **10-day Basel horizon scaling (√10 rule)**, and **audit-ready reporting** across Indian and global assets. Built for quantitative risk evaluation, academic projects, and portfolio analysis.
 
-## What it does
+---
 
-- Pulls adjusted daily closes from Yahoo Finance (`yfinance`)
-- Builds logarithmic returns \( r_t = \ln(P_t / P_{t-1}) \)
-- Estimates **parametric VaR**, **historical VaR**, and **CVaR** at 95% or 99%
-- Reports annualized return, volatility (\(\sigma \sqrt{252}\)), and Sharpe (2% risk-free rate)
-- Replays **COVID 2020**, **2022 inflation / tech sell-off**, and **GFC 2008** with the current weights
-- Exports a one-page CSV risk summary
+## Features
 
-VaR is explained in the UI as: *the maximum expected loss over a 1-day period with X% confidence.*  
-CVaR is: *the average loss expected on the absolute worst-case days beyond the VaR threshold.*
+- **Multi-asset ingestion & search:** Pulls adjusted daily closes and live pricing from Yahoo Finance (`yfinance`) with smart ticker resolution and automatic `.NS` suffixing for Indian stocks.
+- **Flexible allocation modes:** Allocate via percentage sliders (auto-balanced to 100%) or exact absolute capital amounts with strict budget validation.
+- **Tail-risk modeling:** Calculates Parametric (Variance-Covariance) VaR, Historical Simulation VaR, and Conditional VaR (Expected Shortfall) at 95% or 99% confidence.
+- **Multi-horizon scaling:** Applies the square-root-of-time rule to scale 1-day risk metrics to 10-day regulatory holding horizons.
+- **Performance analytics:** Computes annualized return, annualized volatility, and Sharpe ratio against a configurable risk-free rate.
+- **Interactive visualizations:** Plotly charts for return distribution histograms with VaR cutoff lines, cumulative performance, and underwater (peak-to-trough) drawdown curves.
+- **Executive audit reporting:** Exports risk audit summaries to CSV or custom-formatted PDF.
 
-## Quick start (local)
+---
+
+## Quick Start (Local)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+# 1. Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# 2. Install dependencies
 pip install -r requirements.txt
-cp .env.example .env        # optional
+
+# 3. Launch the dashboard
 streamlit run app.py
 ```
 
-Open the URL Streamlit prints (typically `http://localhost:8501`). No JSON files or CLI flags are required to use the dashboard.
+Open the URL Streamlit prints in your terminal (typically `http://localhost:8501`).
 
-## Using the dashboard
+---
 
-1. Enter Yahoo tickers (default `AAPL, MSFT, NVDA, TLT`).
-2. Move the weight sliders — they are renormalized to 100% automatically.
-3. Set notional (default **$100,000**), lookback (1 / 3 / 5 years), and confidence (95% / 99%).
-4. Click **Run analysis**.
-5. Inspect KPI cards, the return histogram (VaR / CVaR lines), the correlation heatmap, and the NAV / drawdown path.
-6. Pick a crisis in the stress-test module for cumulative loss and a per-asset breakdown.
-7. Download **portfolio_risk_summary.csv**.
+## Using the Dashboard
 
-Display currency can be USD or INR. INR monetary figures use the latest `USDINR=X` spot when Yahoo returns it.
+### Tab 1: Portfolio Setup
 
-## Project layout
+1. Search and select assets from major benchmarks, or type custom tickers (e.g., `RELIANCE`, `TCS`, `AAPL`). Indian stocks automatically get the `.NS` suffix.
+2. Choose your display currency (INR or USD), lookback window (1, 3, or 5 years), total portfolio capital, and confidence level (95% or 99%).
+3. Configure weights via **Percentage** sliders or **Absolute** amounts.
+4. Click **Run Risk Analysis**.
 
-```
+### Tab 2: Risk Analytics
+
+- Inspect headline KPI cards for 1-day and 10-day tail risk.
+- View the interactive return distribution, cumulative valuation, and drawdown charts.
+- Expand the advanced sections for the asset return correlation matrix (ρ) and the mathematical methodology.
+- Download audit-ready reports as CSV or PDF.
+
+---
+
+## Project Layout
+
+```text
 portfolio-risk-engine/
-├── app.py                      # Streamlit dashboard (Cloud entrypoint)
-├── requirements.txt
-├── .env.example
-├── .streamlit/config.toml      # Dark theme
+├── app.py                  # Streamlit dashboard entrypoint
+├── requirements.txt        # Python dependencies
+├── .env.example            # Environment configuration template
+├── .streamlit/
+│   └── config.toml         # Dark theme styling
 └── risk_engine/
-    ├── data_loader.py          # Prices, log returns, covariance
-    ├── metrics.py              # VaR, CVaR, Sharpe
-    └── stress_tester.py        # Historical crisis windows
+    ├── data_loader.py      # Data ingestion, normalization, and FX rates
+    ├── metrics.py          # VaR, CVaR, Sharpe, and horizon scaling calculations
+    └── stress_tester.py    # Historical crisis replay utilities
 ```
 
-Imports are package-relative (`from risk_engine...`) so they work locally and on Streamlit Cloud as long as `app.py` stays at the repo root.
+---
 
-## Risk formulas (short)
+## Risk Formulas
 
-Parametric (variance-covariance) 1-day VaR, reported as a **positive loss**:
+**Parametric VaR (Variance-Covariance)**
 
-\[
-\mathrm{VaR}_\alpha = -(\mu_p + z_\alpha \cdot \sigma_p)
-\]
+$$\text{VaR}_\alpha = -(\mu_p + z_\alpha \cdot \sigma_p)$$
 
-where \( z_\alpha = \Phi^{-1}(1-\alpha) \) is the left-tail normal quantile.
+where $z_\alpha$ is the left-tail quantile of the standard normal distribution.
 
-Historical VaR is the \((1-\alpha)\) empirical percentile of realized portfolio log returns (sign-flipped to a loss). CVaR is the mean of observations at or below that threshold.
+**Historical Simulation VaR**
 
-## Configuration
+Non-parametric empirical quantile of realized portfolio log returns.
 
-Optional keys (see `.env.example`):
+**Expected Shortfall (CVaR)**
 
-| Key | Meaning | Default |
-| --- | --- | --- |
-| `YFINANCE_TIMEOUT` | Download timeout (seconds) | `30` |
-| `DEFAULT_CURRENCY` | Initial sidebar currency | `USD` |
-| `RISK_FREE_RATE` | Sharpe risk-free rate (decimal) | `0.02` |
+Conditional expectation of losses beyond the VaR threshold:
 
-Never commit a real `.env`. Streamlit Cloud secrets can hold the same names.
+$$\text{CVaR}_\alpha = -\mathbb{E}\left[r_{p,t} \mid r_{p,t} \le -\text{VaR}_\alpha\right]$$
+
+**10-Day Horizon Scaling**
+
+$$\text{VaR}_{10\text{-Day}} = \text{VaR}_{1\text{-Day}} \times \sqrt{10}$$
+
+---
 
 ## Deploy on Streamlit Community Cloud
 
-1. Push this repo to GitHub (public).
-2. At [share.streamlit.io](https://share.streamlit.io), **New app** → this repository.
-3. Main file: `app.py` (repo root). Python 3.10+ (3.11 or 3.12 recommended).
-4. Deploy. Yahoo Finance must be reachable from Cloud; if a ticker is missing, the app skips it and renormalizes weights.
+1. Push this repository to GitHub (public).
+2. Go to [share.streamlit.io](https://share.streamlit.io) and click **New app**.
+3. Select your repository, set the **Main file path** to `app.py`, and click **Deploy**.
 
-## Disclaimer
-
-This is a research / education tool, not investment advice and not a regulatory VaR model (no liquidity adjustment, no overlapping-window statistics, no stressed VaR backtesting suite). Crisis results assume a **constant-mix** book and will skip names that did not trade in that window.
+---
 
 ## License
 
-Use and modify freely for coursework, demos, and internal research.
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. You may use, modify, and share this software freely under the terms of the GPLv3. See the [LICENSE](LICENSE) file for details.
