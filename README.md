@@ -103,4 +103,4 @@ $$\text{VaR}_{10\text{-Day}} = \text{VaR}_{1\text{-Day}} \times \sqrt{10}$$
 
 ## License
 
-This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. You may use, modify, and share this software freely under the terms of the GPLv3. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**. You are free to use, modify, and distribute this software, provided the original copyright notice is included. See the [LICENSE](LICENSE) file for details.
